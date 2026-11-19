@@ -9,8 +9,8 @@ that can slip past simple filters.
 Implemented so far:
 1. case_randomize()      - <ScRiPt> instead of <script>    [DONE]
 2. html_entity_encode()  - &#x3C;script&#x3E;               [DONE]
-3. event_handler_variant() - swap <script> for onerror=/onmouseover= [TODO]
-4. unicode_encode()      - UTF-7/UTF-8 trickery              [TODO]
+3. unicode_encode()      - \u003Cscript\u003E (JS escapes)  [DONE]
+4. event_handler_variant() - swap <script> for onerror=/onmouseover= [TODO]
 5. filter_bypass_tricks()- missing quotes, alt parens, whitespace/null-byte tricks [TODO]
 
 Reference for technique IDEAS (not for copy-pasting payload strings):
@@ -77,6 +77,35 @@ def html_entity_encode(payload: str) -> str:
     return "".join(result_chars)
 
 
+def unicode_encode(payload: str) -> str:
+    """
+    Converts every character in the payload into its JavaScript unicode
+    escape form, e.g. '<' becomes '\\u003C' and 'a' becomes '\\u0061'.
+
+    Why this works as a bypass: this one targets JS-context filters
+    specifically (not HTML ones - that's html_entity_encode's job).
+    Some naive filters scan for literal substrings like "<script" or
+    "alert(" directly inside JavaScript code/strings. But the JS
+    ENGINE itself understands \\uXXXX escapes as real characters when
+    it parses the script - so "\\u003Cscript\\u003E" is executed by
+    the browser exactly as if you'd typed "<script>", even though the
+    filter never saw that literal text.
+
+    format(ord(c), '04x') turns the character's code point into a
+    4-digit hex string (padded with leading zeros), e.g. ord('<') is
+    60, which in hex is '3c', padded to '003c'.
+
+    Example: "<script>" -> "\\u003c\\u0073\\u0063\\u0072\\u0069\\u0070\\u0074\\u003e"
+    """
+    result_chars = []
+
+    for c in payload:
+        # :04x means: hex format, lowercase, zero-padded to 4 digits
+        result_chars.append(f"\\u{ord(c):04x}")
+
+    return "".join(result_chars)
+
+
 def apply_mutation(payload: str, technique: str = "none") -> str:
     """
     Apply a bypass/encoding technique to a base payload.
@@ -89,6 +118,9 @@ def apply_mutation(payload: str, technique: str = "none") -> str:
 
     if technique == "html_entity":
         return html_entity_encode(payload)
+
+    if technique == "unicode_encode":
+        return unicode_encode(payload)
 
     # TODO: implement more techniques here as they're built, e.g.:
     # if technique == "event_handler":
