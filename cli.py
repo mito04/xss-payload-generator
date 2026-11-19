@@ -59,6 +59,12 @@ def main():
         default="127.0.0.1",
         help="Target host (defaults to a safe local test target).",
     )
+    parser.add_argument(
+        "--technique",
+        default="none",
+        choices=["none", "case_random"],
+        help="Bypass technique to apply (default: none = plain payload).",
+    )
     args = parser.parse_args()
 
     # --- Guardrail 1: legal disclaimer + confirmation ---
@@ -81,7 +87,7 @@ def main():
     try:
         payloads = get_payloads("html_body")
         for raw_payload in payloads:
-            result = apply_mutation(raw_payload, technique="none")
+            result = apply_mutation(raw_payload, technique=args.technique)
             print(f"[+] Generated payload: {result}")
     except (ValueError, NotImplementedError) as e:
         print(f"[!] Error: {e}")
