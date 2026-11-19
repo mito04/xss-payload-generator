@@ -4,23 +4,27 @@ Owner: Member 3 (CLI + Ethics Lead)
 
 This is the entry point: run `python cli.py` to use the tool.
 
-Already includes the 3 ethical guardrails required by the brief:
+Already includes the 4 ethical guardrails required by the brief:
 - Legal disclaimer + Computer Crimes Act confirmation
 - Safe default target (localhost only, unless explicitly overridden)
 - Kill switch (Ctrl+C handled cleanly)
+- Data Handling: results saved locally to ./output/, never sent
+  anywhere else - no network calls, no exfiltration
 
-TODO (Member 3):
+OPTIONAL TODO (Member 3):
 - Add the "--i-have-authorization" flag + extra confirmation
   for any target that isn't localhost/127.0.0.1/example.com
-- Make sure output gets written to ./output/ (per .gitignore),
-  never printed-only or sent anywhere else
 """
 
 import sys
+import os
 import argparse
+from datetime import datetime
 
 from payload_bank import get_payloads, list_contexts
 from mutators import apply_mutation
+
+OUTPUT_DIR = "output"
 
 DISCLAIMER = """
 ==================== LEGAL DISCLAIMER ====================
@@ -90,9 +94,33 @@ def main():
     # --- Core logic: get payloads for the chosen context, mutate them ---
     try:
         payloads = get_payloads(args.context)
+        generated = []
+
         for raw_payload in payloads:
             result = apply_mutation(raw_payload, technique=args.technique)
             print(f"[+] Generated payload: {result}")
+            generated.append(result)
+
+        # --- Guardrail 4 (Data Handling): write results to a LOCAL
+        # output directory only. Nothing here is sent anywhere else -
+        # no network calls, no external server, no exfiltration.
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{args.context}_{args.technique}_{timestamp}.txt"
+        filepath = os.path.join(OUTPUT_DIR, filename)
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(f"Target: {args.target}\n")
+            f.write(f"Context: {args.context}\n")
+            f.write(f"Technique: {args.technique}\n")
+            f.write(f"Generated: {timestamp}\n")
+            f.write("-" * 40 + "\n")
+            for payload in generated:
+                f.write(payload + "\n")
+
+        print(f"[*] Results saved locally to: {filepath}")
+
     except (ValueError, NotImplementedError) as e:
         print(f"[!] Error: {e}")
         sys.exit(1)
