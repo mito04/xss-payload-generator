@@ -10,9 +10,6 @@ Already includes the 3 ethical guardrails required by the brief:
 - Kill switch (Ctrl+C handled cleanly)
 
 TODO (Member 3):
-- Add --context, --technique, --target as real argparse flags
-  (right now context is hardcoded to "html_body" to keep this
-  version simple and WORKING first)
 - Add the "--i-have-authorization" flag + extra confirmation
   for any target that isn't localhost/127.0.0.1/example.com
 - Make sure output gets written to ./output/ (per .gitignore),
@@ -22,7 +19,7 @@ TODO (Member 3):
 import sys
 import argparse
 
-from payload_bank import get_payloads
+from payload_bank import get_payloads, list_contexts
 from mutators import apply_mutation
 
 DISCLAIMER = """
@@ -52,7 +49,7 @@ def confirm_authorization() -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="XSS Payload Generator (prototype v0.1 - bare bones)"
+        description="XSS Payload Generator (prototype v0.2 - multi-context)"
     )
     parser.add_argument(
         "--target",
@@ -64,6 +61,12 @@ def main():
         default="none",
         choices=["none", "case_random"],
         help="Bypass technique to apply (default: none = plain payload).",
+    )
+    parser.add_argument(
+        "--context",
+        default="html_body",
+        choices=list_contexts(),
+        help="Injection context to generate payloads for (default: html_body).",
     )
     args = parser.parse_args()
 
@@ -82,10 +85,11 @@ def main():
         sys.exit(1)
 
     print(f"[*] Target confirmed as safe: {args.target}")
+    print(f"[*] Using injection context: {args.context}")
 
-    # --- Core logic: get a payload, "mutate" it (passthrough for now) ---
+    # --- Core logic: get payloads for the chosen context, mutate them ---
     try:
-        payloads = get_payloads("html_body")
+        payloads = get_payloads(args.context)
         for raw_payload in payloads:
             result = apply_mutation(raw_payload, technique=args.technique)
             print(f"[+] Generated payload: {result}")
