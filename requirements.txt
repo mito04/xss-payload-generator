@@ -1,0 +1,10 @@
+# This project has NO external dependencies.
+#
+# Only the Python standard library is used:
+# - argparse   (CLI argument parsing)
+# - random     (case randomization technique)
+# - os         (output directory creation)
+# - sys        (exit codes)
+# - datetime   (timestamping output files)
+#
+# Requires Python 3.8 or newer.
