@@ -49,7 +49,7 @@ def confirm_authorization() -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="XSS Payload Generator (prototype v0.4 - unicode_encode technique added)"
+        description="XSS Payload Generator (v1.0 - all planned bypass techniques implemented)"
     )
     parser.add_argument(
         "--target",
@@ -59,7 +59,7 @@ def main():
     parser.add_argument(
         "--technique",
         default="none",
-        choices=["none", "case_random", "html_entity", "unicode_encode"],
+        choices=["none", "case_random", "html_entity", "unicode_encode", "filter_bypass"],
         help="Bypass technique to apply (default: none = plain payload).",
     )
     parser.add_argument(

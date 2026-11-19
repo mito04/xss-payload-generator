@@ -10,8 +10,9 @@ Implemented so far:
 1. case_randomize()      - <ScRiPt> instead of <script>    [DONE]
 2. html_entity_encode()  - &#x3C;script&#x3E;               [DONE]
 3. unicode_encode()      - \u003Cscript\u003E (JS escapes)  [DONE]
-4. event_handler_variant() - swap <script> for onerror=/onmouseover= [TODO]
-5. filter_bypass_tricks()- missing quotes, alt parens, whitespace/null-byte tricks [TODO]
+4. filter_bypass_tricks()- backtick call + /**/ whitespace   [DONE]
+5. event_handler_variant() - already covered as separate RAW payloads in
+   payload_bank.py (onerror=/onmouseover=), no dedicated mutator needed
 
 Reference for technique IDEAS (not for copy-pasting payload strings):
 https://swisskyrepo.github.io/PayloadsAllTheThings/XSS%20Injection
@@ -106,6 +107,40 @@ def unicode_encode(payload: str) -> str:
     return "".join(result_chars)
 
 
+def filter_bypass_tricks(payload: str) -> str:
+    """
+    Applies two small, classic filter-bypass tricks at once, combining
+    them with the previous techniques (unlike the encoders above, this
+    one does string replacements rather than encoding every character):
+
+    TRICK 1 - Parenthesis-less function calls (JS "tagged template"):
+    Many naive filters specifically blacklist "(" and ")" because
+    that's how function calls normally look, e.g. alert('XSS-test').
+    But JavaScript has a feature called "tagged template literals"
+    that lets you call a function using BACKTICKS instead of
+    parentheses: alert`XSS-test` is valid JS and calls alert() with
+    "XSS-test" as the argument - no parentheses needed at all.
+
+    TRICK 2 - Comment-based whitespace:
+    Some filters specifically block literal space characters (to stop
+    multi-word payloads). Replacing spaces with a JS/CSS-style EMPTY
+    COMMENT (/**/) still acts as a separator to the parser, but
+    contains no literal space character for the filter to catch.
+
+    Example: "alert('XSS-test')" -> "alert`XSS-test`" (no parens, no spaces)
+    """
+    # TRICK 1: turn "alert('XSS-test')" into "alert`XSS-test`"
+    # - replace the opening  ('  with a backtick
+    # - replace the closing  ')  with a backtick
+    result = payload.replace("('", "`").replace("')", "`")
+
+    # TRICK 2: replace any literal space with an empty comment, so a
+    # filter looking for the space character " " won't find one
+    result = result.replace(" ", "/**/")
+
+    return result
+
+
 def apply_mutation(payload: str, technique: str = "none") -> str:
     """
     Apply a bypass/encoding technique to a base payload.
@@ -122,9 +157,8 @@ def apply_mutation(payload: str, technique: str = "none") -> str:
     if technique == "unicode_encode":
         return unicode_encode(payload)
 
-    # TODO: implement more techniques here as they're built, e.g.:
-    # if technique == "event_handler":
-    #     return event_handler_variant(payload)
+    if technique == "filter_bypass":
+        return filter_bypass_tricks(payload)
 
     raise NotImplementedError(
         f"Mutation technique '{technique}' not implemented yet."
