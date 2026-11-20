@@ -53,7 +53,20 @@ def confirm_authorization() -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="XSS Payload Generator (v1.0 - all planned bypass techniques implemented)"
+        description="XSS Payload Generator (v1.0 - all planned bypass techniques implemented)",
+        epilog="""
+Examples:
+  python cli.py
+  python cli.py --context attribute
+  python cli.py --context html_body --technique case_random
+  python cli.py --context js_string --technique html_entity
+  python cli.py --context url_param --technique unicode_encode
+  python cli.py --context attribute --technique filter_bypass
+
+Every run requires typing 'I AGREE' to the legal disclaimer before any
+payload is generated. Results are printed and saved locally to ./output/.
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--target",
