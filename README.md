@@ -29,7 +29,7 @@ This tool deliberately stops at Weaponization. It does not perform Delivery, Exp
 Requires Python 3.8+. No external dependencies — only the Python standard library is used (`argparse`, `random`, `os`, `sys`, `datetime`).
 
 ```bash
-git clone https://github.com/<your-username>/xss-payload-generator.git
+git clone https://github.com/mito04/xss-payload-generator.git
 cd xss-payload-generator
 python cli.py --help
 ```
@@ -70,6 +70,19 @@ Every run requires you to type `I AGREE` after reading the legal disclaimer, con
 - `html_entity` — encodes characters as HTML entities to evade raw-text filters
 - `unicode_encode` — encodes characters as JS `\uXXXX` escapes to evade JS-context filters
 - `filter_bypass` — removes parentheses (via backtick calls) and spaces (via `/**/`) to evade character-blacklist filters
+
+## Proof of Concept
+
+The tool was manually tested against OWASP Juice Shop (a deliberately vulnerable practice application) running inside an isolated Kali Linux VM, in line with the Rules of Engagement below. The tool itself never connects to any target — each generated payload was copied and pasted by hand into Juice Shop's search field, consistent with this tool's design as a pure payload generator rather than a scanner.
+
+**Tool generating a payload with the `filter_bypass` technique:**
+<img width="975" height="499" alt="image" src="https://github.com/user-attachments/assets/31b524e2-f4c9-4091-b361-712811b19520" />
+
+**Resulting XSS execution confirmed in the browser (using the `--technique none` `img onerror` payload):**
+<img width="975" height="499" alt="image" src="https://github.com/user-attachments/assets/a85f59a0-cffa-48eb-aa80-156f30a35016" />
+
+
+Testing also surfaced useful, specific findings about *why* certain payloads succeed or fail in a real browser — for example, `<script>` tags inserted via `innerHTML` never execute regardless of filtering, and the `filter_bypass` technique's `/**/` whitespace substitution broke the HTML tag's own structure rather than bypassing anything. These results, and the reasoning behind them, are discussed in full in the accompanying Technical Report.
 
 ## Ethical Considerations
 
