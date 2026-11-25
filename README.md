@@ -1,5 +1,5 @@
 # XSS Payload Generator & Bypass Engine
- 
+  
 A command-line tool for generating context-aware Cross-Site Scripting (XSS) test payloads, with a few basic encoding and evasion techniques layered on top so the payloads can get past naive input filters. Built for the Ethical Hacking Tool Development assignment (IKB31603, UniKL MIIT) by team Skibidi Kaboom.
 
 ## Attack Category
